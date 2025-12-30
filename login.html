@@ -130,10 +130,13 @@
         usernameGroup.style.display = 'none';
         usernameGroup.innerHTML = `
             <label for="display-name">Username</label>
-            <input type="text" id="display-name" required>
+            <input type="text" id="display-name">
         `;
         // Insert before email
         form.insertBefore(usernameGroup, form.firstChild);
+
+        // Explicitly set required prop based on initial mode
+        document.getElementById('display-name').required = !isLoginMode;
 
         toggleBtn.addEventListener('click', () => {
             isLoginMode = !isLoginMode;
