@@ -384,6 +384,10 @@ window.addEventListener('touchstart', (e) => {
 
 window.addEventListener('touchmove', (e) => {
     if (state.isNavigating) return;
+
+    // DISABLE SCROLL OPEN ON MOBILE
+    if (window.innerWidth < 600) return;
+
     const touchY = e.touches[0].clientY;
     const deltaY = touchStartY - touchY;
 
@@ -431,7 +435,11 @@ window.addEventListener('pointerdown', (event) => {
     const ballIntersects = raycaster.intersectObjects(pokeBall.children, true);
     if (ballIntersects.length > 0) {
         const obj = ballIntersects[0].object;
-        if (obj.userData.isButton) {
+
+        // Mobile: Click ANY part of the ball to open. Desktop: Click button only.
+        const isMobile = window.innerWidth < 600;
+
+        if (obj.userData.isButton || isMobile) {
             // Toggle
             state.targetProgress = state.targetProgress < 0.5 ? 1 : 0;
             const scrollBar = document.getElementById('scroll-bar');
