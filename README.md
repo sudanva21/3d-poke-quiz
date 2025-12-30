@@ -80,6 +80,22 @@ Since this project uses **ES Modules** and **CORS-bound capabilities**, it requi
     -   Enable **Auth** (Email/Password) and **Firestore**.
     -   Copy your config keys into `js/firebase-config.js`.
 
+## 🌍 Deployment
+
+Deploying to **Vercel** or **Netlify** is seamless.
+
+1.  **Framework Preset**: Select **"Other"** (Static HTML).
+2.  **Build Command**: Leave empty.
+3.  **Output Directory**: Leave as `.` (root).
+
+### ⚠️ Critical Step: Firebase Authorization
+After deploying, your new domain (e.g., `https://your-app.vercel.app`) will **NOT** work with Firebase Authentication by default.
+
+1.  Go to [Firebase Console](https://console.firebase.google.com/).
+2.  Navigate to **Authentication** > **Settings** > **Authorized Domains**.
+3.  Click **Add Domain** and paste your Vercel/Netlify URL.
+4.  *Without this, users cannot log in!*
+
 ---
 
 ## 🌟 Key Features
