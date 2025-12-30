@@ -53,6 +53,13 @@ window.addEventListener('nav-click', (e) => {
     const overlay = document.getElementById(targetId);
 
     if (overlay) {
+        // --- AUTH PROTECTION ---
+        if (url === '#quizzes' && !authService.getCurrentUser()) {
+            window.location.href = 'login.html';
+            return;
+        }
+        // -----------------------
+
         // Close any open overlays
         document.querySelectorAll('.content-overlay.active').forEach(el => el.classList.remove('active'));
 

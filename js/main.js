@@ -13,8 +13,32 @@ const GAP = 0.2;
 export const state = {
     scrollProgress: 0, // 0 to 1
     targetProgress: 0,
-    isNavigating: false
+    isNavigating: false,
+    gyro: { beta: 0, gamma: 0, active: false }
 };
+
+// --- Gyroscope Logic ---
+function handleOrientation(event) {
+    // We only care about beta (tilt front/back) and gamma (tilt left/right)
+    state.gyro.beta = event.beta || 0;
+    state.gyro.gamma = event.gamma || 0;
+    state.gyro.active = true;
+}
+
+async function requestGyroPermission() {
+    if (state.gyro.active) return; // Already running or requested
+
+    if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+        try {
+            const permission = await DeviceOrientationEvent.requestPermission();
+            if (permission === 'granted') {
+                window.addEventListener('deviceorientation', handleOrientation);
+            }
+        } catch (e) { console.warn("Gyro permission failed:", e); }
+    } else {
+        window.addEventListener('deviceorientation', handleOrientation);
+    }
+}
 
 // --- Scene Setup ---
 const scene = new THREE.Scene();
@@ -411,6 +435,9 @@ const raycaster = new THREE.Raycaster();
 const mouse = new THREE.Vector2();
 
 window.addEventListener('pointerdown', (event) => {
+    // Request gyro permission on first interaction (required for mobile)
+    requestGyroPermission();
+
     // Prevent interaction if clicking on UI
     if (event.target !== renderer.domElement) return;
 
@@ -450,6 +477,18 @@ window.addEventListener('pointerdown', (event) => {
 
 function handleNavClick(sprite) {
     state.isNavigating = true;
+
+    // --- AUTH PROTECTION ---
+    // If accessing Quiz, check if user is logged in
+    if (sprite.userData.label.toLowerCase() === 'quizzes') {
+        const user = authService.getCurrentUser();
+        if (!user) {
+            console.log("User not logged in, redirecting to login...");
+            window.location.href = 'login.html';
+            return;
+        }
+    }
+    // -----------------------
 
     // 1. Spawn Smoke at sprite position
     spawnSmoke(sprite.position);
@@ -513,6 +552,27 @@ function animate() {
 
     // Scroll Animation
     state.scrollProgress += (state.targetProgress - state.scrollProgress) * 0.1;
+
+    // Gyro Parallax (Mobile only)
+    if (state.gyro.active && window.innerWidth < 600) {
+        // Natural tilt is roughly 45-60 degrees for beta
+        const tiltX = (state.gyro.beta - 50) * 0.01;
+        const tiltZ = -state.gyro.gamma * 0.01;
+
+        // Subtly tilt the ball
+        pokeBall.rotation.x = THREE.MathUtils.lerp(pokeBall.rotation.x, tiltX, 0.1);
+        pokeBall.rotation.z = THREE.MathUtils.lerp(pokeBall.rotation.z, tiltZ, 0.1);
+
+        // Move background particles for parallax depths
+        particlesMesh.position.x = THREE.MathUtils.lerp(particlesMesh.position.x, -state.gyro.gamma * 0.2, 0.1);
+        particlesMesh.position.y = THREE.MathUtils.lerp(particlesMesh.position.y, (state.gyro.beta - 50) * 0.2, 0.1);
+    } else {
+        // Smoothly return to default if gyro inactive.
+        pokeBall.rotation.x = THREE.MathUtils.lerp(pokeBall.rotation.x, 0, 0.05);
+        pokeBall.rotation.z = THREE.MathUtils.lerp(pokeBall.rotation.z, 0, 0.05);
+        particlesMesh.position.x = THREE.MathUtils.lerp(particlesMesh.position.x, 0, 0.05);
+        particlesMesh.position.y = THREE.MathUtils.lerp(particlesMesh.position.y, 0, 0.05);
+    }
 
     // Ball mechanics
     // Lift top shell

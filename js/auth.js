@@ -4,9 +4,11 @@ import {
     signInWithEmailAndPassword,
     signOut,
     updateProfile,
-    onAuthStateChanged
+    onAuthStateChanged,
+    GoogleAuthProvider,
+    signInWithPopup
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-import { doc, setDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { doc, setDoc, updateDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 export const authService = {
     // Signup
@@ -40,6 +42,33 @@ export const authService = {
             return { success: true, user: userCredential.user };
         } catch (error) {
             console.error("Login Error:", error);
+            return { success: false, message: error.message };
+        }
+    },
+
+    // Google Login
+    async loginWithGoogle() {
+        try {
+            const provider = new GoogleAuthProvider();
+            const result = await signInWithPopup(auth, provider);
+            const user = result.user;
+
+            // Check if user exists in Firestore, if not create doc
+            const userRef = doc(db, "users", user.uid);
+            const userSnap = await getDoc(userRef);
+
+            if (!userSnap.exists()) {
+                await setDoc(userRef, {
+                    username: user.displayName,
+                    email: user.email,
+                    createdAt: new Date().toISOString(),
+                    scores: []
+                });
+            }
+
+            return { success: true, user };
+        } catch (error) {
+            console.error("Google Login Error:", error);
             return { success: false, message: error.message };
         }
     },

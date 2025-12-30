@@ -23,7 +23,7 @@ This project is built using modern, performance-oriented web technologies:
 -   **Three.js (r128)**: The core engine powering the 3D Poké Ball scene, lighting, and particle effects.
 
 ### **Backend & Cloud (Serverless)**
--   **Firebase Authentication**: Secure email/password login and session management.
+-   **Firebase Authentication**: Secure email/password and **Google One-Tap** login.
 -   **Cloud Firestore**: NoSQL real-time database for storing:
     -   User Profiles (Ranks, Titles).
     -   Quiz Scores & Mastery Stats.
@@ -82,31 +82,28 @@ Since this project uses **ES Modules** and **CORS-bound capabilities**, it requi
 
 ## 🌍 Deployment
 
-Deploying to **Vercel** or **Netlify** is seamless.
-
-1.  **Framework Preset**: Select **"Other"** (Static HTML).
-2.  **Build Command**: Leave empty.
-3.  **Output Directory**: Leave as `.` (root).
-
-### ⚠️ Critical Step: Firebase Authorization
-After deploying, your new domain (e.g., `https://your-app.vercel.app`) will **NOT** work with Firebase Authentication by default.
+### ⚠️ Critical Step: Firebase Google Auth & Whitelisting
+After deploying to **Vercel**, you MUST:
 
 1.  Go to [Firebase Console](https://console.firebase.google.com/).
 2.  Navigate to **Authentication** > **Settings** > **Authorized Domains**.
-3.  Click **Add Domain** and paste your Vercel/Netlify URL.
-4.  *Without this, users cannot log in!*
+3.  Add your Vercel URL (e.g., `3d-poke-quiz.vercel.app`).
+4.  Navigate to **Authentication** > **Sign-in method** > **Google** and ensure it's enabled.
 
 ---
 
 ## 🌟 Key Features
 
-1.  **3D Interactive Navigation**: A rotating Poké Ball menu system that responds to scrolling and touch gestures.
-2.  **Dynamic Profile System**: 
+1.  **3D Interactive Hub**: A high-brightness rotating Poké Ball menu system.
+2.  **Smart Navigation**: 
+    -   **Desktop**: Scroll to rotate, click button to open.
+    -   **Mobile**: Click anywhere on the ball to toggle.
+3.  **Gyroscope Parallax**: Real-time device orientation tracking on mobile for immersive depth.
+4.  **Authorized Access**: Quizzes are protected via Auth guards; only authenticated Trainers can battle!
+5.  **Dynamic Profile System**: 
     -   Real-time rank updates (Rookie -> Elite -> Master).
     -   Visual mastery bars for different tech stacks.
-    -   Inline username editing.
-3.  **Scalable Content**: New quizzes can be added via the database without code changes.
-4.  **Mobile First**: Optimized camera angles and touch controls for small screens.
+6.  **Scalable Content**: New quizzes can be added via the database without code changes.
 
 ---
 
