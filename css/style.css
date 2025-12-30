@@ -1,0 +1,381 @@
+:root {
+    --color-bg: #1a1a1a;
+    --color-text: #ffffff;
+    --color-primary: #ffcb05;
+    /* Pokemon Yellow */
+    --color-secondary: #2a75bb;
+    /* Pokemon Blue */
+    --font-main: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    background-color: var(--color-bg);
+    font-family: var(--font-main);
+}
+
+canvas {
+    display: block;
+}
+
+#ui-container {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    color: var(--color-text);
+    pointer-events: none;
+    z-index: 10;
+}
+
+h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: var(--color-primary);
+    text-shadow: 2px 2px 0px var(--color-secondary);
+}
+
+p {
+    margin: 5px 0 0;
+    font-size: 0.9rem;
+    opacity: 0.8;
+}
+
+.instruction {
+    position: absolute;
+    bottom: 30px;
+    width: 100%;
+    text-align: center;
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 0.9rem;
+    pointer-events: none;
+    transition: opacity 0.5s;
+}
+
+/* Redirect Overlay - Kept for legacy support, but we might repurpose this */
+#redirect-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: white;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 1s;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    color: #333;
+    font-weight: bold;
+}
+
+#scroll-indicator {
+    position: absolute;
+    right: 30px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 6px;
+    height: 200px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+#scroll-bar {
+    width: 100%;
+    height: 0%;
+    background: var(--color-primary);
+    box-shadow: 0 0 10px var(--color-primary);
+    transition: height 0.1s;
+}
+
+/* --- Content Overlays --- */
+.content-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.5s ease-in-out;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 50;
+    background: rgba(0, 0, 0, 0.4);
+    /* Dim background slightly */
+    backdrop-filter: blur(2px);
+}
+
+.content-overlay.active {
+    pointer-events: auto;
+    opacity: 1;
+}
+
+.card {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 20px;
+    padding: 40px;
+    max-width: 600px;
+    width: 90%;
+    color: white;
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+    transform: translateY(20px);
+    transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    position: relative;
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+.content-overlay.active .card {
+    transform: translateY(0);
+}
+
+.card h2 {
+    color: var(--color-primary);
+    text-transform: uppercase;
+    margin-top: 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+    padding-bottom: 10px;
+}
+
+.card p {
+    font-size: 1.1rem;
+    line-height: 1.6;
+}
+
+.close-btn {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    background: transparent;
+    border: none;
+    color: white;
+    font-size: 1.5rem;
+    cursor: pointer;
+    transition: transform 0.2s, color 0.2s;
+}
+
+.close-btn:hover {
+    transform: scale(1.1) rotate(90deg);
+    color: var(--color-primary);
+}
+
+.btn {
+    display: inline-block;
+    margin-top: 20px;
+    padding: 10px 25px;
+    background: var(--color-primary);
+    color: #333;
+    text-decoration: none;
+    font-weight: bold;
+    border-radius: 50px;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(255, 203, 5, 0.4);
+}
+
+/* --- Quiz Styles --- */
+.quiz-options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    justify-content: center;
+    margin-top: 20px;
+}
+
+.options-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.option-btn {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    padding: 15px;
+    border-radius: 10px;
+    color: white;
+    cursor: pointer;
+    text-align: left;
+    transition: background 0.2s;
+    font-size: 1rem;
+}
+
+.option-btn:hover {
+    background: rgba(255, 203, 5, 0.2);
+    border-color: var(--color-primary);
+}
+
+.question-text {
+    font-size: 1.3rem;
+    font-weight: bold;
+    margin-bottom: 20px;
+    color: var(--color-primary);
+}
+
+.progress-bar-container {
+    width: 100%;
+    height: 6px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
+    margin-bottom: 20px;
+    overflow: hidden;
+}
+
+#quiz-progress {
+    height: 100%;
+    width: 0%;
+    background: var(--color-secondary);
+    transition: width 0.3s;
+}
+
+.score-display {
+    font-size: 2rem;
+    font-weight: bold;
+    color: var(--color-primary);
+}
+
+/* --- New Quiz Features --- */
+.quiz-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.timer {
+    background: rgba(0, 0, 0, 0.3);
+    border: 2px solid var(--color-primary);
+    color: var(--color-primary);
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-weight: bold;
+    font-size: 1.1rem;
+    box-shadow: 0 0 10px rgba(255, 203, 5, 0.2);
+}
+
+.timer.warning {
+    color: #ff4d4d;
+    border-color: #ff4d4d;
+    animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+    0% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.1);
+    }
+
+    100% {
+        transform: scale(1);
+    }
+}
+
+#media-container {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+#question-image {
+    max-width: 100%;
+    max-height: 200px;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.hint-btn {
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: rgba(255, 255, 255, 0.7);
+    padding: 5px 15px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    cursor: pointer;
+    margin-top: 10px;
+    transition: all 0.2s;
+}
+
+.hint-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+}
+
+#hint-text {
+    background: rgba(255, 203, 5, 0.1);
+    padding: 10px;
+    border-radius: 5px;
+    border-left: 3px solid var(--color-primary);
+    margin-top: 10px;
+    font-size: 0.9rem;
+    font-style: italic;
+}
+
+#feedback-section h4 {
+    color: var(--color-primary);
+    margin-top: 0;
+}
+
+/* --- Mobile Responsiveness --- */
+@media (max-width: 600px) {
+    #ui-container {
+        top: 15px;
+        left: 15px;
+    }
+
+    h1 {
+        font-size: 1.2rem;
+    }
+
+    .card {
+        width: 85%;
+        padding: 20px;
+        max-height: 75vh;
+    }
+
+    .quiz-options {
+        gap: 10px;
+    }
+
+    .btn {
+        padding: 8px 15px;
+        font-size: 0.9rem;
+        width: 100%;
+        text-align: center;
+        box-sizing: border-box;
+    }
+
+    .option-btn {
+        padding: 12px;
+        font-size: 0.9rem;
+    }
+
+    /* Adjust instruction text to not overlap with bottom nav if any */
+    .instruction {
+        bottom: 20px;
+        font-size: 0.7rem;
+        width: 90%;
+        left: 5%;
+    }
+}

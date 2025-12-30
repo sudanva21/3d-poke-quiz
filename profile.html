@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Poké Quiz - Profile</title>
+    <link rel="icon" href="https://img.icons8.com/color/48/pokeball--v1.png" type="image/x-icon">
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;700&family=Press+Start+2P&display=swap"
+        rel="stylesheet">
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        :root {
+            --pk-red: #ff1c1c;
+            --pk-white: #f0f0f0;
+            --pk-black: #222;
+            --holo-blue: #00f0ff;
+            --holo-bg: rgba(0, 240, 255, 0.1);
+        }
+
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #0f0f13;
+            font-family: 'Outfit', sans-serif;
+            color: white;
+        }
+
+        /* --- Utility Classes (Replacing Tailwind) --- */
+        .flex {
+            display: flex;
+        }
+
+        .items-center {
+            align-items: center;
+        }
+
+        .justify-center {
+            justify-content: center;
+        }
+
+        .gap-2 {
+            gap: 0.5rem;
+        }
+
+        .text-sm {
+            font-size: 0.875rem;
+        }
+
+        .text-gray-400 {
+            color: #9ca3af;
+        }
+
+        .mb-4 {
+            margin-bottom: 1rem;
+        }
+
+        .outline-none {
+            outline: 2px solid transparent;
+            outline-offset: 2px;
+        }
+
+        /* Back Button */
+        .back-btn {
+            position: fixed;
+            top: 1.5rem;
+            left: 1.5rem;
+            z-index: 50;
+            color: rgba(255, 255, 255, 0.7);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: none;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .back-btn:hover {
+            color: #ffffff;
+            opacity: 1;
+        }
+
+        .back-btn span {
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            font-size: 0.875rem;
+        }
+
+        /* Name Edit Container */
+        .name-container {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .edit-icon {
+            color: #6b7280;
+            cursor: pointer;
+            font-size: 0.875rem;
+            transition: color 0.2s;
+        }
+
+        .edit-icon:hover {
+            color: #ffffff;
+        }
+
+        #canvas-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        /* UI Overlay */
+        #ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 10;
+            pointer-events: none;
+            /* Let clicks pass through to 3D scene */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* Instructions */
+        .instruction-text {
+            position: absolute;
+            bottom: 30px;
+            width: 100%;
+            text-align: center;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.5);
+            animation: pulse 2s infinite;
+            letter-spacing: 2px;
+            pointer-events: auto;
+            /* Allow interaction if needed */
+        }
+
+        /* The Profile Card */
+        .profile-card {
+            width: 320px;
+            padding: 2rem;
+            background: rgba(15, 15, 19, 0.65);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(12px);
+            border-radius: 20px;
+            box-shadow:
+                0 0 30px rgba(0, 0, 0, 0.5),
+                inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+
+            /* Initial State: Hidden */
+            opacity: 0;
+            transform: scale(0.8) translateY(20px);
+            pointer-events: none;
+            /* Initially non-clickable */
+
+            transition: all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Visible State triggered by JS */
+        .profile-card.active {
+            opacity: 1;
+            transform: scale(1) translateY(0);
+            pointer-events: auto;
+        }
+
+        /* Holo Effect Borders */
+        .profile-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--holo-blue), transparent);
+            opacity: 0.5;
+        }
+
+        .profile-card::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--holo-blue), transparent);
+            opacity: 0.5;
+        }
+
+        .trainer-tag {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 10px;
+            color: var(--holo-blue);
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .trainer-name {
+            font-size: 2rem;
+            font-weight: 700;
+            line-height: 1;
+            margin-bottom: 0.25rem;
+            background: linear-gradient(to right, #fff, #aaa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .trainer-title {
+            color: #888;
+            font-size: 0.9rem;
+            margin-bottom: 1.5rem;
+        }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            gap: 12px;
+            margin-top: 1.5rem;
+        }
+
+        .stat-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.85rem;
+        }
+
+        .stat-label {
+            width: 40px;
+            font-weight: 700;
+            color: #ccc;
+        }
+
+        .stat-bar-bg {
+            flex: 1;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .stat-bar-fill {
+            height: 100%;
+            background: var(--holo-blue);
+            width: 0%;
+            /* Animate width in CSS/JS */
+            border-radius: 3px;
+            transition: width 1s ease-out 0.5s;
+            box-shadow: 0 0 10px var(--holo-blue);
+        }
+
+        /* Badges / Tech Stack */
+        .badges {
+            display: flex;
+            gap: 10px;
+            margin-top: 1.5rem;
+            justify-content: center;
+        }
+
+        .badge {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.05);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--holo-blue);
+            transition: 0.3s;
+            cursor: pointer;
+        }
+
+        .badge:hover {
+            background: var(--holo-blue);
+            color: #000;
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0, 240, 255, 0.4);
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 0.3;
+            }
+
+            50% {
+                opacity: 0.8;
+            }
+        }
+
+        /* Close Button on Card */
+        .close-btn {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            cursor: pointer;
+            color: #666;
+            transition: 0.2s;
+        }
+
+        .close-btn:hover {
+            color: #fff;
+        }
+
+        /* Logout Button */
+        .logout-btn {
+            position: absolute;
+            top: 10px;
+            right: 45px;
+            /* Left of close btn */
+            cursor: pointer;
+            color: #ff6b6b;
+            transition: 0.2s;
+        }
+
+        .logout-btn:hover {
+            color: #ff1c1c;
+        }
+
+
+        /* Mobile Adjustments */
+        @media (max-width: 600px) {
+            .profile-card {
+                width: 95%;
+                max-width: 340px;
+                padding: 1.5rem;
+                max-height: 85vh;
+                overflow-y: auto;
+            }
+
+            .trainer-name {
+                font-size: 1.5rem;
+            }
+
+            .trainer-title {
+                font-size: 0.8rem;
+            }
+
+            .stat-row {
+                font-size: 0.75rem;
+            }
+
+            .badge {
+                width: 32px;
+                height: 32px;
+                font-size: 0.9rem;
+            }
+
+            /* Adjust Back Button position for mobile */
+            .back-btn {
+                top: 15px;
+                left: 15px;
+            }
+
+            .back-btn span {
+                font-size: 0.7rem;
+                letter-spacing: 1px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="canvas-container"></div>
+
+    <!-- Top Left Back Button -->
+    <button id="mainBackBtn" class="back-btn">
+        <i class="fa-solid fa-arrow-left text-xl"></i>
+        <span>BACK TO HUB</span>
+    </button>
+
+    <div id="ui-layer">
+
+        <div class="profile-card" id="profileCard">
+            <!-- Navigation Controls -->
+            <i class="fa-solid fa-sign-out-alt logout-btn" id="logoutBtn" title="Logout"></i>
+            <i class="fa-solid fa-xmark close-btn" id="closeBtn" title="Close Card"></i>
+
+            <div class="trainer-tag" id="trainer-tag">#TRAINER • ROOKIE</div>
+
+            <div class="name-container">
+                <h1 class="trainer-name outline-none" id="trainer-name" spellcheck="false">Loading...</h1>
+                <i class="fa-solid fa-pen-to-square edit-icon" id="editNameBtn" title="Edit Name"></i>
+            </div>
+
+            <p class="trainer-title" id="trainer-title">Code Master in Training</p>
+
+            <p class="text-sm text-gray-400 leading-relaxed mb-4">
+                Stats loaded from secure database. Mastery calculated based on recent quiz performance.
+            </p>
+
+            <div class="stats-grid">
+                <!-- DSA BAR (Yellow) -->
+                <div class="stat-row">
+                    <span class="stat-label">DSA</span>
+                    <div class="stat-bar-bg">
+                        <div class="stat-bar-fill" id="bar-dsa"
+                            style="width: 0%; background: #f7df1e; box-shadow: 0 0 8px #f7df1e;"></div>
+                    </div>
+                </div>
+                <!-- CS BAR (Blue) -->
+                <div class="stat-row">
+                    <span class="stat-label">CS</span>
+                    <div class="stat-bar-bg">
+                        <div class="stat-bar-fill" id="bar-cs"
+                            style="width: 0%; background: #264de4; box-shadow: 0 0 8px #264de4;"></div>
+                    </div>
+                </div>
+                <!-- Frontend BAR (Cyan) -->
+                <div class="stat-row">
+                    <span class="stat-label">WEB</span>
+                    <div class="stat-bar-bg">
+                        <div class="stat-bar-fill" id="bar-frontend"
+                            style="width: 0%; background: #00f0ff; box-shadow: 0 0 8px #00f0ff;"></div>
+                    </div>
+                </div>
+                <!-- Backend BAR (Green) -->
+                <div class="stat-row">
+                    <span class="stat-label">SYS</span>
+                    <div class="stat-bar-bg">
+                        <div class="stat-bar-fill" id="bar-backend"
+                            style="width: 0%; background: #00ff9d; box-shadow: 0 0 8px #00ff9d;"></div>
+                    </div>
+                </div>
+                <!-- WOW BAR (White) -->
+                <div class="stat-row">
+                    <span class="stat-label">WOW</span>
+                    <div class="stat-bar-bg">
+                        <div class="stat-bar-fill" id="bar-wow"
+                            style="width: 0%; background: #ffffff; box-shadow: 0 0 8px #ffffff;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="badges">
+                <div class="badge" title="Developer"><i class="fa-solid fa-code"></i></div>
+                <div class="badge" title="Brain Power"><i class="fa-solid fa-brain"></i></div>
+                <div class="badge" title="Certified"><i class="fa-solid fa-certificate"></i></div>
+                <div class="badge" title="Active"><i class="fa-solid fa-bolt"></i></div>
+            </div>
+        </div>
+
+        <div class="instruction-text" id="instruction">CLICK THE BALL TO OPEN</div>
+    </div>
+
+    <!-- Three.js CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+    <!-- Functional Script -->
+    <script type="module">
+        import { authService } from './js/auth.js';
+        import { dataService } from './js/data-service.js';
+
+        let isProfileOpen = false;
+
+        // AUTH & DATA LOGIC
+        // AUTH & DATA LOGIC
+        authService.monitorAuth(async (user) => {
+            if (!user) {
+                window.location.href = 'login.html';
+                return;
+            }
+
+            // Set Name
+            const nameEl = document.getElementById('trainer-name');
+            if (nameEl) nameEl.innerText = user.displayName || "Trainer";
+
+            // Load Profile Data
+            const userData = await dataService.getUserProfile(user.uid);
+
+            // Correctly access scores
+            const history = userData?.scores || userData?.quizHistory || [];
+
+            // Calculate Stats
+            const stats = {
+                dsa: { score: 0, total: 0 },
+                cs: { score: 0, total: 0 },
+                wow: { score: 0, total: 0 },
+                frontend: { score: 0, total: 0 },
+                backend: { score: 0, total: 0 }
+            };
+
+            let totalQuizzes = 0;
+
+            history.forEach(entry => {
+                const type = entry.quizType;
+                if (stats[type]) {
+                    stats[type].score += entry.score;
+                    stats[type].total += entry.total;
+                }
+                totalQuizzes++;
+            });
+
+            // Update Tag
+            const tagEl = document.getElementById('trainer-tag');
+            if (tagEl) tagEl.innerText = `#00${totalQuizzes} • ${getRank(totalQuizzes)}`;
+
+            const titleEl = document.getElementById('trainer-title');
+            if (titleEl) titleEl.innerText = getTitle(totalQuizzes);
+
+            // Update Bars
+            Object.keys(stats).forEach(key => {
+                const s = stats[key];
+                let pct = 0;
+                if (s.total > 0) {
+                    pct = Math.round((s.score / s.total) * 100);
+                }
+                const bar = document.getElementById(`bar-${key}`);
+                if (bar) {
+                    bar.style.width = `${pct}%`;
+                    bar.parentElement.title = `${pct}% Mastery`;
+                }
+            });
+        });
+
+        // --- Name Edit Logic ---
+        const nameEl = document.getElementById('trainer-name');
+        const editBtn = document.getElementById('editNameBtn');
+
+        editBtn.addEventListener('click', () => {
+            nameEl.contentEditable = true;
+            nameEl.focus();
+            nameEl.classList.add('border-b', 'border-white'); // Visual cue
+
+            // Move cursor to end
+            const range = document.createRange();
+            const sel = window.getSelection();
+            range.selectNodeContents(nameEl);
+            range.collapse(false);
+            sel.removeAllRanges();
+            sel.addRange(range);
+        });
+
+        nameEl.addEventListener('blur', saveName);
+        nameEl.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                nameEl.blur(); // Triggers save
+            }
+        });
+
+        async function saveName() {
+            nameEl.contentEditable = false;
+            nameEl.classList.remove('border-b', 'border-white');
+
+            const newName = nameEl.innerText.trim();
+            if (newName.length > 0) {
+                // Call API
+                await authService.updateUsername(newName);
+            } else {
+                // Revert if empty? Or just keep old
+                // For now, reload to revert or simplistic check needed
+            }
+        }
+
+        // --- Helpers ---
+        function getRank(count) {
+            if (count > 20) return 'MASTER';
+            if (count > 10) return 'ELITE';
+            if (count > 5) return 'VETERAN';
+            return 'ROOKIE';
+        }
+
+        function getTitle(count) {
+            if (count > 20) return 'Legendary Pokemon Master';
+            if (count > 10) return 'Gym Leader in Training';
+            if (count > 5) return 'Rising Star';
+            return 'Aspiring Trainer';
+        }
+
+        // --- Action Handlers ---
+
+        // 1. Close Button (Card only)
+        document.getElementById('closeBtn').addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (isProfileOpen) toggleProfile(); // Just toggle, no redirect!
+        });
+
+        // 2. Back to Hub (Top Left)
+        document.getElementById('mainBackBtn').addEventListener('click', () => {
+            window.location.href = 'index.html';
+        });
+
+        // 3. Logout
+        document.getElementById('logoutBtn').addEventListener('click', async (e) => {
+            e.stopPropagation();
+            await authService.logout();
+            window.location.href = 'index.html';
+        });
+
+        // 3D SCENE LOGIC (From profile2.html)
+        // ... (We repeat the 3D code here to ensure it runs)
+
+        const scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(0x0f0f13, 0.02);
+
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.z = 6;
+        camera.position.y = 0.5;
+
+        const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.shadowMap.enabled = true;
+        document.getElementById('canvas-container').appendChild(renderer.domElement);
+
+        // Lights
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
+        scene.add(ambientLight);
+
+        const dirLight = new THREE.DirectionalLight(0xffffff, 1);
+        dirLight.position.set(5, 10, 7);
+        dirLight.castShadow = true;
+        scene.add(dirLight);
+
+        const rimLight = new THREE.SpotLight(0x00f0ff, 2);
+        rimLight.position.set(-10, 0, -5);
+        rimLight.lookAt(0, 0, 0);
+        scene.add(rimLight);
+
+        // PokeBall Group
+        const ballGroup = new THREE.Group();
+        scene.add(ballGroup);
+
+        const sphereRadius = 1.5;
+        const segmentCount = 64;
+
+        // Materials
+        const redMaterial = new THREE.MeshStandardMaterial({ color: 0xe61919, roughness: 0.2, metalness: 0.3 });
+        const whiteMaterial = new THREE.MeshStandardMaterial({ color: 0xf0f0f0, roughness: 0.2, metalness: 0.3 });
+        const blackMaterial = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.5, metalness: 0.1 });
+        const glowMaterial = new THREE.MeshBasicMaterial({ color: 0x00f0ff, transparent: true, opacity: 0.8 });
+
+        // Geometry
+        const bottomGeo = new THREE.SphereGeometry(sphereRadius, segmentCount, segmentCount, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2);
+        const bottomMesh = new THREE.Mesh(bottomGeo, whiteMaterial);
+        bottomMesh.castShadow = true; bottomMesh.receiveShadow = true;
+
+        const topGeo = new THREE.SphereGeometry(sphereRadius, segmentCount, segmentCount, 0, Math.PI * 2, 0, Math.PI / 2);
+        const topMesh = new THREE.Mesh(topGeo, redMaterial);
+        topMesh.castShadow = true; topMesh.receiveShadow = true;
+
+        const innerGeo = new THREE.SphereGeometry(sphereRadius * 0.95, segmentCount, segmentCount);
+        const innerMesh = new THREE.Mesh(innerGeo, blackMaterial);
+
+        const torusGeo = new THREE.TorusGeometry(sphereRadius * 0.96, 0.15, 16, 100);
+        const bandMesh = new THREE.Mesh(torusGeo, blackMaterial);
+        bandMesh.rotation.x = Math.PI / 2;
+
+        // Button Group
+        const buttonGroup = new THREE.Group();
+        const btnOuter = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.4, 0.2, 32), blackMaterial);
+        btnOuter.rotation.x = Math.PI / 2; btnOuter.position.z = sphereRadius * 0.92;
+
+        const btnInner = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.25, 0.22, 32), whiteMaterial);
+        btnInner.rotation.x = Math.PI / 2; btnInner.position.z = sphereRadius * 0.92;
+
+        const coreLight = new THREE.Mesh(new THREE.SphereGeometry(0.3, 16, 16), glowMaterial);
+        coreLight.visible = false;
+        ballGroup.add(coreLight);
+
+        buttonGroup.add(btnOuter);
+        buttonGroup.add(btnInner);
+
+        // Grouping
+        const topParts = new THREE.Group();
+        const bottomParts = new THREE.Group();
+
+        ballGroup.add(topParts);
+        ballGroup.add(bottomParts);
+        ballGroup.add(innerMesh);
+
+        bottomParts.add(bottomMesh);
+        bottomParts.add(bandMesh);
+        bottomParts.add(buttonGroup);
+        topParts.add(topMesh);
+
+        // Interactivity
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2();
+
+        function toggleProfile() {
+            isProfileOpen = !isProfileOpen;
+            const card = document.getElementById('profileCard');
+            const instr = document.getElementById('instruction');
+
+            if (isProfileOpen) {
+                card.classList.add('active');
+                instr.style.opacity = 0;
+                coreLight.visible = true;
+            } else {
+                card.classList.remove('active');
+                instr.style.opacity = 1;
+                setTimeout(() => { coreLight.visible = false; }, 500);
+            }
+        }
+
+        window.addEventListener('click', (event) => {
+            // Only trigger if click is NOT on the UI card (handled by pointer-events usually, but to be sure)
+            // Actually, UI layer has pointer-events: none, except elements.
+            // But checking intersection ensures we only click the ball.
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+            raycaster.setFromCamera(mouse, camera);
+
+            const intersects = raycaster.intersectObjects(ballGroup.children, true);
+            if (intersects.length > 0) {
+                toggleProfile();
+            }
+        });
+
+        // Particles
+        const particlesGeo = new THREE.BufferGeometry();
+        const particlesCount = 300;
+        const posArray = new Float32Array(particlesCount * 3);
+        for (let i = 0; i < particlesCount * 3; i++) posArray[i] = (Math.random() - 0.5) * 30;
+        particlesGeo.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+        const particlesMesh = new THREE.Points(particlesGeo, new THREE.PointsMaterial({ size: 0.05, color: 0x00f0ff, transparent: true, opacity: 0.5 }));
+        scene.add(particlesMesh);
+
+        // Animation
+        let time = 0;
+        function animate() {
+            requestAnimationFrame(animate);
+            time += 0.01;
+
+            if (!isProfileOpen) {
+                ballGroup.rotation.y += 0.01;
+                ballGroup.rotation.z = Math.sin(time) * 0.1;
+                ballGroup.position.y = Math.sin(time * 2) * 0.2;
+                topParts.position.y = THREE.MathUtils.lerp(topParts.position.y, 0, 0.1);
+                bottomParts.position.y = THREE.MathUtils.lerp(bottomParts.position.y, 0, 0.1);
+                bottomParts.rotation.x = THREE.MathUtils.lerp(bottomParts.rotation.x, 0, 0.1);
+            } else {
+                ballGroup.rotation.y = THREE.MathUtils.lerp(ballGroup.rotation.y, 0.5, 0.05);
+                ballGroup.rotation.z = THREE.MathUtils.lerp(ballGroup.rotation.z, 0, 0.05);
+                topParts.position.y = THREE.MathUtils.lerp(topParts.position.y, 1.2, 0.08);
+                bottomParts.position.y = THREE.MathUtils.lerp(bottomParts.position.y, -1.0, 0.08);
+                bottomParts.rotation.x = THREE.MathUtils.lerp(bottomParts.rotation.x, 0.2, 0.05);
+                coreLight.scale.setScalar(1 + Math.sin(time * 5) * 0.2);
+            }
+            particlesMesh.rotation.y = -time * 0.05;
+            renderer.render(scene, camera);
+        }
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        animate();
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Poké Quiz - Login</title>
+    <link rel="icon" href="https://img.icons8.com/color/48/pokeball--v1.png" type="image/x-icon">
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        body {
+            overflow: auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+        }
+
+        .auth-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(15px);
+            padding: 40px;
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            width: 100%;
+            max-width: 400px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: var(--color-primary);
+        }
+
+        input {
+            width: 100%;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 5px;
+            color: white;
+            box-sizing: border-box;
+        }
+
+        .auth-btn {
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        .toggle-text {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .toggle-text:hover {
+            color: white;
+            text-decoration: underline;
+        }
+
+        #error-msg {
+            color: #ff6b6b;
+            text-align: center;
+            margin-top: 10px;
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="auth-card">
+        <h2 style="text-align: center; color: var(--color-primary); text-transform: uppercase;">Trainer Access</h2>
+
+        <form id="auth-form">
+            <div class="form-group">
+                <label for="username">Username</label>
+                <input type="text" id="username" required>
+            </div>
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" required>
+            </div>
+            <button type="submit" class="btn auth-btn">Login</button>
+        </form>
+
+        <p id="error-msg"></p>
+
+        <p class="toggle-text" id="toggle-mode">New Trainer? Sign Up Here</p>
+        <p class="toggle-text" onclick="window.location.href='index.html'">Back to Hub</p>
+    </div>
+
+    <script type="module">
+        import { authService } from './js/auth.js';
+
+        const form = document.getElementById('auth-form');
+        const usernameInput = document.getElementById('username');
+        const passwordInput = document.getElementById('password');
+        const errorMsg = document.getElementById('error-msg');
+        const toggleBtn = document.getElementById('toggle-mode');
+        const submitBtn = document.querySelector('.auth-btn');
+
+        let isLoginMode = true;
+
+        // Note: authService.getCurrentUser() might be synchronous for initial check 
+        // but FireAuth takes a moment to init. Better to use monitorAuth or just let user try to login.
+        // We will just let them proceed for now.
+
+        // For 'username' field: In login mode, this is EMAIL. In Signup, we need EMAIL and USERNAME.
+        // Let's adjust the UI dynamically.
+
+        // 1. Change username input to email
+        usernameInput.placeholder = "Enter Email";
+        usernameInput.type = "email";
+        const label1 = document.querySelector('label[for="username"]');
+        label1.innerText = "Email";
+
+        // 2. Add actual username field for signup
+        const usernameGroup = document.createElement('div');
+        usernameGroup.className = 'form-group';
+        usernameGroup.id = 'username-group';
+        usernameGroup.style.display = 'none';
+        usernameGroup.innerHTML = `
+            <label for="display-name">Username</label>
+            <input type="text" id="display-name" required>
+        `;
+        // Insert before email
+        form.insertBefore(usernameGroup, form.firstChild);
+
+        toggleBtn.addEventListener('click', () => {
+            isLoginMode = !isLoginMode;
+            submitBtn.innerText = isLoginMode ? 'Login' : 'Sign Up';
+            toggleBtn.innerText = isLoginMode ? 'New Trainer? Sign Up Here' : 'Already have an account? Login Here';
+            errorMsg.style.display = 'none';
+
+            // Toggle Username field visibility
+            document.getElementById('username-group').style.display = isLoginMode ? 'none' : 'block';
+            document.getElementById('display-name').required = !isLoginMode;
+        });
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = usernameInput.value;
+            const password = passwordInput.value;
+            submitBtn.disabled = true;
+            submitBtn.innerText = "Processing...";
+
+            console.log("Attempting Auth...", isLoginMode ? "Login" : "Signup", email);
+
+            let result;
+
+            if (isLoginMode) {
+                result = await authService.login(email, password);
+            } else {
+                const displayName = document.getElementById('display-name').value;
+                result = await authService.signup(email, password, displayName);
+            }
+
+            console.log("Auth Result:", result);
+
+            if (result.success) {
+                console.log("Redirecting to index.html...");
+                window.location.href = 'index.html';
+            } else {
+                console.error("Auth Failed:", result.message);
+                // Clean up error message for user
+                let niceMsg = result.message;
+                if (result.message.includes("auth/invalid-email")) niceMsg = "Invalid Email Address.";
+                if (result.message.includes("auth/user-not-found") || result.message.includes("auth/wrong-password")) niceMsg = "Invalid Email or Password.";
+                if (result.message.includes("auth/email-already-in-use")) niceMsg = "Email already registered.";
+                if (result.message.includes("auth/weak-password")) niceMsg = "Password is too weak (min 6 chars).";
+
+                errorMsg.innerText = niceMsg;
+                errorMsg.style.display = 'block';
+                submitBtn.disabled = false;
+                submitBtn.innerText = isLoginMode ? 'Login' : 'Sign Up';
+            }
+        });
+    </script>
+</body>
+
+</html>

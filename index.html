@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Poké Quiz Hub</title>
+    <link rel="icon" href="https://img.icons8.com/color/48/pokeball--v1.png" type="image/x-icon">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+
+    <div id="ui-container">
+        <h1>Poké Quiz</h1>
+        <p>Scroll to Open Menu</p>
+    </div>
+
+    <div id="scroll-indicator">
+        <div id="scroll-bar"></div>
+    </div>
+
+    <div class="instruction" id="instruction-text">Scroll Down to Reveal Links • Click to Navigate</div>
+
+    <!-- Redirect Overlay - kept for basic feedback -->
+    <div id="redirect-overlay">Loading...</div>
+
+    <!-- Content Overlays -->
+    <!-- overlay-home and overlay-pages have been removed as per new navigation logic -->
+
+    <div id="overlay-about" class="content-overlay">
+        <div class="card">
+            <button class="close-btn" aria-label="Close">&times;</button>
+            <h2>Trainer's Log: About</h2>
+            <p>Welcome to the <strong>Poké Quiz League</strong>! This isn't just a test—it's a journey to become a Tech
+                Master.</p>
+            <p style="margin-top: 10px;">Trainers challenge themselves across various domains (Gyms) like
+                <strong>Algorithms, Systems, and General Knowledge</strong>. Each correct answer strengthens your
+                profile, visualizing your mastery in 3D.</p>
+
+            <h3>Tech Stack (The Engine)</h3>
+            <ul class="tech-stack-list"
+                style="list-style: none; padding: 0; display: flex; gap: 10px; margin-top: 15px; flex-wrap: wrap;">
+                <li style="background: rgba(255,255,255,0.1); padding: 5px 10px; border-radius: 5px;">Three.js (3D Core)
+                </li>
+                <li style="background: rgba(255,255,255,0.1); padding: 5px 10px; border-radius: 5px;">Firebase (Cloud
+                    Data)</li>
+                <li style="background: rgba(255,255,255,0.1); padding: 5px 10px; border-radius: 5px;">Vanilla JS (Logic)
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Quizzes Overlay -->
+    <div id="overlay-quizzes" class="content-overlay">
+        <div class="card" id="quiz-container">
+            <button class="close-btn" aria-label="Close">&times;</button>
+
+            <!-- 1. Selection Screen -->
+            <div id="quiz-selection">
+                <h2>Choose Your Gym</h2>
+                <p>Select a domain to battle:</p>
+                <div class="quiz-options">
+                    <button class="btn quiz-btn" data-type="dsa">DSA (Algorithm Gym)</button>
+                    <button class="btn quiz-btn" data-type="cs">CS (System Gym)</button>
+                    <button class="btn quiz-btn" data-type="frontend">Frontend (Web Gym)</button>
+                    <button class="btn quiz-btn" data-type="backend">Backend (Server Gym)</button>
+                    <button class="btn quiz-btn" data-type="wow">General (Trivia Gym)</button>
+                </div>
+            </div>
+
+            <!-- 2. Question Screen -->
+            <div id="quiz-question-view" style="display: none;">
+                <div id="quiz-loading" style="display: none; text-align: center; margin-top: 50px;">
+                    <p>Loading Quiz...</p>
+                </div>
+
+                <div id="quiz-content">
+                    <div class="quiz-header">
+                        <h3 id="quiz-title">Topic</h3>
+                        <div id="timer-display" class="timer">15</div>
+                    </div>
+
+                    <div class="progress-bar-container">
+                        <div id="quiz-progress"></div>
+                    </div>
+
+                    <div id="media-container" style="display: none;">
+                        <img id="question-image" src="" alt="Question Image" />
+                    </div>
+
+                    <p id="question-text" class="question-text">Question goes here...</p>
+
+                    <div id="options-container" class="options-grid">
+                        <!-- Buttons injected here -->
+                    </div>
+
+                    <!-- Hint Section -->
+                    <div id="hint-section">
+                        <button id="hint-btn" class="hint-btn">Show Hint</button>
+                        <p id="hint-text" style="display: none;"></p>
+                    </div>
+
+                    <!-- Explanation/Feedback Section -->
+                    <div id="feedback-section" style="display: none;">
+                        <hr style="border: 0; border-top: 1px solid rgba(255,255,255,0.2); margin: 20px 0;">
+                        <h4>Explanation</h4>
+                        <p id="explanation-text"></p>
+                        <button id="next-btn" class="btn">Next Question</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3. Result Screen -->
+            <div id="quiz-result-view" style="display: none;">
+                <h2>Quiz Complete!</h2>
+                <p class="score-display">You scored <span id="final-score">0</span> / <span
+                        id="total-questions">0</span></p>
+                <button class="btn" id="restart-quiz-btn">Try Another</button>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Pages Overlay - REMOVED -->
+
+    <!-- Import Map for Three.js -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.0/three.module.js",
+                "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+
+    <script type="module" src="js/main.js"></script>
+    <script type="module" src="js/quiz-data.js"></script>
+    <script type="module" src="js/quiz-3d.js"></script>
+
+    <!-- UI Logic for new website features -->
+    <script type="module" src="js/ui.js"></script>
+</body>
+
+</html>

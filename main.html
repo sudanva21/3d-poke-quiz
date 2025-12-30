@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Poké Ball - Nav Hub</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: #1a1a1a;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        canvas {
+            display: block;
+        }
+
+        #ui-container {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            color: white;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 1.5rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: #ffcb05;
+            /* Pokemon Yellow */
+            text-shadow: 2px 2px 0px #2a75bb;
+            /* Pokemon Blue */
+        }
+
+        p {
+            margin: 5px 0 0;
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+
+        .instruction {
+            position: absolute;
+            bottom: 30px;
+            width: 100%;
+            text-align: center;
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 0.9rem;
+            pointer-events: none;
+            transition: opacity 0.5s;
+        }
+
+        /* Redirect Overlay */
+        #redirect-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: white;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 1s;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            color: #333;
+            font-weight: bold;
+        }
+
+        #scroll-indicator {
+            position: absolute;
+            right: 30px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 6px;
+            height: 200px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        #scroll-bar {
+            width: 100%;
+            height: 0%;
+            background: #ffcb05;
+            box-shadow: 0 0 10px #ffcb05;
+            transition: height 0.1s;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="ui-container">
+        <h1>Poké Quiz</h1>
+        <p>Scroll to Open Menu</p>
+    </div>
+
+    <div id="scroll-indicator">
+        <div id="scroll-bar"></div>
+    </div>
+
+    <div class="instruction" id="instruction-text">Scroll Down to Reveal Links • Click to Navigate</div>
+
+    <div id="redirect-overlay">Loading...</div>
+
+    <!-- Import Map for Three.js -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.0/three.module.js",
+                "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+        // --- Configuration ---
+        const RADIUS = 5;
+        const SEGMENTS = 64;
+        const GAP = 0.2;
+
+        // --- State ---
+        const state = {
+            scrollProgress: 0, // 0 to 1
+            targetProgress: 0,
+            isNavigating: false
+        };
+
+        // --- Scene Setup ---
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x1a1a1a);
+        scene.fog = new THREE.Fog(0x1a1a1a, 15, 60);
+
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(0, 5, 24);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        document.body.appendChild(renderer.domElement);
+
+        // --- Controls ---
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        controls.enableZoom = false;
+        controls.minDistance = 15;
+        controls.maxDistance = 30;
+
+        // --- Lighting ---
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+        scene.add(ambientLight);
+
+        const mainLight = new THREE.DirectionalLight(0xffffff, 2.0);
+        mainLight.position.set(10, 10, 10);
+        mainLight.castShadow = true;
+        scene.add(mainLight);
+
+        const rimLight = new THREE.SpotLight(0x2a75bb, 5.0); // Blueish rim
+        rimLight.position.set(-10, 10, -5);
+        rimLight.lookAt(0, 0, 0);
+        scene.add(rimLight);
+
+        // Internal Glow Light (Visible when opened)
+        const innerLight = new THREE.PointLight(0xffcb05, 0, 15); // Yellow glow
+        innerLight.position.set(0, 0, 0);
+        scene.add(innerLight);
+
+        // --- Materials ---
+        const redMaterial = new THREE.MeshPhysicalMaterial({
+            color: 0xee1515, metalness: 0.1, roughness: 0.2, clearcoat: 0.5, clearcoatRoughness: 0.1, side: THREE.DoubleSide
+        });
+        const whiteMaterial = new THREE.MeshPhysicalMaterial({
+            color: 0xffffff, metalness: 0.1, roughness: 0.2, clearcoat: 0.5, clearcoatRoughness: 0.1, side: THREE.DoubleSide
+        });
+        const blackMaterial = new THREE.MeshPhysicalMaterial({
+            color: 0x222222, metalness: 0.2, roughness: 0.4
+        });
+        const innerCoreMaterial = new THREE.MeshStandardMaterial({
+            color: 0x111111, emissive: 0x222222, metalness: 0.8, roughness: 0.2
+        });
+
+        // --- Poké Ball Construction ---
+        const pokeBall = new THREE.Group();
+        scene.add(pokeBall);
+
+        // 1. Inner Energy Core
+        const energyGeo = new THREE.SphereGeometry(1.8, 32, 32);
+        const energyMesh = new THREE.Mesh(energyGeo, innerCoreMaterial);
+        pokeBall.add(energyMesh);
+
+        // 2. Top Shell Group
+        const topGroup = new THREE.Group();
+        pokeBall.add(topGroup);
+
+        const topGeometry = new THREE.SphereGeometry(RADIUS, SEGMENTS, SEGMENTS, 0, Math.PI * 2, 0, (Math.PI / 2) - (GAP / 2));
+        const topMesh = new THREE.Mesh(topGeometry, redMaterial);
+        topMesh.castShadow = true;
+        topMesh.receiveShadow = true;
+        topGroup.add(topMesh);
+
+        // 3. Bottom Shell Group
+        const bottomGroup = new THREE.Group();
+        pokeBall.add(bottomGroup);
+
+        const bottomGeometry = new THREE.SphereGeometry(RADIUS, SEGMENTS, SEGMENTS, 0, Math.PI * 2, (Math.PI / 2) + (GAP / 2), (Math.PI / 2) - (GAP / 2));
+        const bottomMesh = new THREE.Mesh(bottomGeometry, whiteMaterial);
+        bottomMesh.castShadow = true;
+        bottomMesh.receiveShadow = true;
+        bottomGroup.add(bottomMesh);
+
+        // 4. Band/Button (Attached to Top for flip effect, or separate)
+        // Let's attach the band logic to the Top Group so the button lifts up like a latch
+        const bandGeo = new THREE.CylinderGeometry(RADIUS + 0.05, RADIUS + 0.05, GAP * 0.8, 64, 1, true);
+        const bandMesh = new THREE.Mesh(bandGeo, blackMaterial);
+        // We'll just leave the band implicit by the gap and the inner core for now to keep the "split" effect clean
+
+        // Button Logic
+        const buttonGroup = new THREE.Group();
+        buttonGroup.rotation.x = Math.PI / 2;
+        buttonGroup.position.z = RADIUS - 0.2;
+
+        // Add button to Top Group so it lifts
+        topGroup.add(buttonGroup);
+
+        const buttonBase = new THREE.Mesh(new THREE.CylinderGeometry(1.2, 1.2, 0.8, 32), blackMaterial);
+        buttonBase.castShadow = true;
+        buttonGroup.add(buttonBase);
+
+        const buttonInner = new THREE.Mesh(new THREE.CylinderGeometry(0.7, 0.7, 1.0, 32), new THREE.MeshStandardMaterial({ color: 0xffffff }));
+        buttonInner.userData = { isButton: true };
+        buttonInner.castShadow = true;
+        buttonGroup.add(buttonInner);
+
+
+        // --- Navigation Sprites (Pokémon Styled) ---
+        function createNavSprite(text) {
+            const canvas = document.createElement('canvas');
+            canvas.width = 512;
+            canvas.height = 256;
+            const ctx = canvas.getContext('2d');
+
+            // Style Config
+            const borderW = 15;
+            const x = borderW, y = borderW;
+            const w = 512 - borderW * 2;
+            const h = 256 - borderW * 2;
+            const r = 40;
+
+            // 1. Background (White)
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath();
+            ctx.roundRect(x, y, w, h, r);
+            ctx.fill();
+
+            // 2. Border (Pokemon Blue)
+            ctx.strokeStyle = '#2a75bb';
+            ctx.lineWidth = borderW;
+            ctx.stroke();
+
+            // 3. Inner Shadow/Glow (Subtle)
+            ctx.shadowColor = 'rgba(0,0,0,0.3)';
+            ctx.shadowBlur = 20;
+            ctx.shadowOffsetX = 0;
+            ctx.shadowOffsetY = 10;
+
+            // 4. Text (Pokemon Yellow with Blue Outline)
+            ctx.shadowColor = 'transparent'; // Reset shadow for text
+            ctx.font = '900 80px "Verdana", sans-serif'; // Heavy font
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+
+            // Text Stroke
+            ctx.lineWidth = 12;
+            ctx.strokeStyle = '#2a75bb'; // Blue Stroke
+            ctx.strokeText(text.toUpperCase(), 256, 128);
+
+            // Text Fill
+            ctx.fillStyle = '#ffcb05'; // Yellow Fill
+            ctx.fillText(text.toUpperCase(), 256, 128);
+
+            const texture = new THREE.CanvasTexture(canvas);
+            const material = new THREE.SpriteMaterial({ map: texture, transparent: true, opacity: 0 });
+            const sprite = new THREE.Sprite(material);
+            sprite.scale.set(4, 2, 1);
+            return sprite;
+        }
+
+        const navData = [
+            { label: 'Home', url: '#home', pos: { x: -3, y: 5, z: 0 } },
+            { label: 'About', url: '#about', pos: { x: 3, y: 5, z: 0 } },
+            { label: 'Quizzes', url: '#quizzes', pos: { x: -4.5, y: 2, z: 2 } },
+            { label: 'Pages', url: '#pages', pos: { x: 4.5, y: 2, z: 2 } }
+        ];
+
+        const navSprites = [];
+        const navGroup = new THREE.Group();
+        scene.add(navGroup);
+
+        navData.forEach(data => {
+            const sprite = createNavSprite(data.label);
+            sprite.userData = { isNav: true, label: data.label, url: data.url };
+            sprite.userData.targetPos = new THREE.Vector3(data.pos.x, data.pos.y, data.pos.z);
+            sprite.position.set(0, 0, 0);
+            navGroup.add(sprite);
+            navSprites.push(sprite);
+        });
+
+
+        // --- Smoke Effect System ---
+        const smokeParticles = [];
+        const particleGeo = new THREE.PlaneGeometry(1, 1);
+
+        // Generate soft smoke texture
+        function createSmokeTexture() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 128;
+            canvas.height = 128;
+            const ctx = canvas.getContext('2d');
+            const grad = ctx.createRadialGradient(64, 64, 0, 64, 64, 64);
+            grad.addColorStop(0, 'rgba(255,255,255,0.8)');
+            grad.addColorStop(0.4, 'rgba(220,220,220,0.4)');
+            grad.addColorStop(1, 'rgba(255,255,255,0)');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, 128, 128);
+            return new THREE.CanvasTexture(canvas);
+        }
+
+        const smokeMaterial = new THREE.MeshBasicMaterial({
+            map: createSmokeTexture(),
+            transparent: true,
+            opacity: 0.6,
+            depthWrite: false
+        });
+
+        function spawnSmoke(position) {
+            for (let i = 0; i < 15; i++) {
+                const particle = new THREE.Mesh(particleGeo, smokeMaterial.clone());
+                particle.position.copy(position);
+
+                // Random spread
+                particle.position.x += (Math.random() - 0.5) * 2;
+                particle.position.y += (Math.random() - 0.5) * 2;
+                particle.position.z += (Math.random() - 0.5) * 2;
+
+                // Random rotation
+                particle.rotation.z = Math.random() * Math.PI;
+
+                scene.add(particle);
+
+                smokeParticles.push({
+                    mesh: particle,
+                    velocity: new THREE.Vector3(
+                        (Math.random() - 0.5) * 0.2,
+                        (Math.random() - 0.5) * 0.2,
+                        (Math.random() - 0.5) * 0.2
+                    ),
+                    scaleSpeed: 0.05 + Math.random() * 0.05,
+                    life: 1.0 // opacity
+                });
+            }
+        }
+
+        // --- Input Handling ---
+        window.addEventListener('wheel', (event) => {
+            if (state.isNavigating) return;
+            const delta = Math.sign(event.deltaY) * 0.05;
+            state.targetProgress = Math.max(0, Math.min(1, state.targetProgress + delta));
+
+            document.getElementById('scroll-bar').style.height = (state.targetProgress * 100) + '%';
+            document.getElementById('instruction-text').style.opacity = state.targetProgress > 0.1 ? 0 : 1;
+        });
+
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2();
+
+        window.addEventListener('pointerdown', (event) => {
+            if (state.isNavigating) return;
+
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+            raycaster.setFromCamera(mouse, camera);
+
+            // Check Nav Links
+            if (state.scrollProgress > 0.5) {
+                const navIntersects = raycaster.intersectObjects(navGroup.children);
+                if (navIntersects.length > 0) {
+                    const hit = navIntersects[0].object;
+                    handleNavClick(hit);
+                    return;
+                }
+            }
+
+            // Check Button to Open
+            const ballIntersects = raycaster.intersectObjects(pokeBall.children, true);
+            if (ballIntersects.length > 0) {
+                const obj = ballIntersects[0].object;
+                if (obj.userData.isButton) {
+                    // Toggle
+                    state.targetProgress = state.targetProgress < 0.5 ? 1 : 0;
+                    document.getElementById('scroll-bar').style.height = (state.targetProgress * 100) + '%';
+                }
+            }
+        });
+
+        function handleNavClick(sprite) {
+            state.isNavigating = true;
+
+            // 1. Spawn Smoke at sprite position
+            spawnSmoke(sprite.position);
+
+            // 2. Visual feedback
+            const overlay = document.getElementById('redirect-overlay');
+            overlay.innerText = `Navigating to ${sprite.userData.label}...`;
+            overlay.style.opacity = 1;
+            overlay.style.pointerEvents = 'auto';
+
+            // 3. Simulated Redirect
+            setTimeout(() => {
+                // Here is where you would do window.location.href = sprite.userData.url;
+                // For demo purposes, we reload/reset
+                console.log(`Redirected to ${sprite.userData.url}`);
+                window.location.hash = sprite.userData.url;
+
+                // Reset after delay for demo
+                setTimeout(() => {
+                    overlay.style.opacity = 0;
+                    overlay.style.pointerEvents = 'none';
+                    state.isNavigating = false;
+                }, 2000);
+            }, 1000);
+        }
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // --- Animation Loop ---
+        const clock = new THREE.Clock();
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const time = clock.getElapsedTime();
+
+            // Scroll Animation
+            state.scrollProgress += (state.targetProgress - state.scrollProgress) * 0.1;
+
+            // Ball mechanics
+            // Lift top shell and button
+            topGroup.position.y = state.scrollProgress * 3.5;
+            topGroup.rotation.x = -state.scrollProgress * 0.5; // Slight tilt back
+
+            // Lower bottom shell
+            bottomGroup.position.y = -state.scrollProgress * 1.5;
+
+            // Rotation
+            pokeBall.rotation.y = time * 0.15;
+
+            // Lights
+            innerLight.intensity = state.scrollProgress * 5;
+
+            // Nav Sprites Animation
+            navSprites.forEach((sprite, i) => {
+                if (state.scrollProgress < 0.1) {
+                    sprite.visible = false;
+                } else {
+                    sprite.visible = true;
+                    // Fade in
+                    sprite.material.opacity = Math.max(0, (state.scrollProgress - 0.3) * 1.5);
+
+                    // Move out from center
+                    const target = sprite.userData.targetPos;
+                    sprite.position.x = THREE.MathUtils.lerp(0, target.x, state.scrollProgress);
+                    sprite.position.y = THREE.MathUtils.lerp(0, target.y, state.scrollProgress) + Math.sin(time * 2 + i) * 0.1;
+                    sprite.position.z = THREE.MathUtils.lerp(0, target.z, state.scrollProgress);
+
+                    // Scale effect
+                    const scale = (4 * state.scrollProgress);
+                    sprite.scale.set(scale, scale * 0.5, 1);
+                }
+            });
+
+            // Smoke Particles Animation
+            for (let i = smokeParticles.length - 1; i >= 0; i--) {
+                const p = smokeParticles[i];
+                p.life -= 0.02;
+
+                if (p.life <= 0) {
+                    scene.remove(p.mesh);
+                    smokeParticles.splice(i, 1);
+                    continue;
+                }
+
+                p.mesh.position.add(p.velocity);
+                p.mesh.scale.addScalar(p.scaleSpeed);
+                p.mesh.rotation.z += 0.05;
+                p.mesh.material.opacity = p.life * 0.6;
+                p.mesh.lookAt(camera.position); // Billboarding
+            }
+
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        animate();
+
+    </script>
+</body>
+
+</html>
