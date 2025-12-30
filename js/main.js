@@ -40,10 +40,10 @@ controls.minDistance = 15;
 controls.maxDistance = 30;
 
 // --- Lighting ---
-const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
+const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
 scene.add(ambientLight);
 
-const mainLight = new THREE.DirectionalLight(0xffffff, 1.0);
+const mainLight = new THREE.DirectionalLight(0xffffff, 1.8);
 mainLight.position.set(5, 10, 7); // Updated position
 mainLight.castShadow = true;
 scene.add(mainLight);
@@ -348,7 +348,7 @@ function spawnSmoke(position) {
 // --- Input Handling ---
 window.addEventListener('wheel', (event) => {
     if (state.isNavigating) return;
-    const delta = Math.sign(event.deltaY) * 0.05;
+    const delta = Math.sign(event.deltaY) * 0.12;
     state.targetProgress = Math.max(0, Math.min(1, state.targetProgress + delta));
 
     const scrollBar = document.getElementById('scroll-bar');
@@ -388,7 +388,7 @@ window.addEventListener('touchmove', (e) => {
     const deltaY = touchStartY - touchY;
 
     // Sensitivity factor
-    const delta = deltaY * 0.002;
+    const delta = deltaY * 0.005;
 
     state.targetProgress = Math.max(0, Math.min(1, state.targetProgress + delta));
 
